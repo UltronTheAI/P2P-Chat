@@ -176,6 +176,6 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(3001, () => {
-  console.log("Signaling server running on port 3001");
+httpServer.listen(5000, () => {
+  console.log("Signaling server running on port 5000");
 });
