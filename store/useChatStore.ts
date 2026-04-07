@@ -25,8 +25,19 @@ function sortChats(chats: Chat[]) {
   return [...chats].sort((left, right) => right.lastMessageAt - left.lastMessageAt);
 }
 
+function mergeMessages(messages: Message[]) {
+  const byId = new Map<string, Message>();
+
+  messages.forEach((message) => {
+    const existing = byId.get(message.id);
+    byId.set(message.id, existing ? { ...existing, ...message } : message);
+  });
+
+  return Array.from(byId.values()).sort((left, right) => left.createdAt - right.createdAt);
+}
+
 function recalcChat(chat: Chat, messages: Message[]) {
-  const orderedMessages = [...messages].sort((left, right) => left.createdAt - right.createdAt);
+  const orderedMessages = mergeMessages(messages);
   const lastMessage = orderedMessages.at(-1);
 
   return {
@@ -60,9 +71,10 @@ export const useChatStore = create<ChatState>((set) => ({
         return state;
       }
 
+      const alreadyExists = existingChat.messages.some((entry) => entry.id === message.id);
       const nextChat = recalcChat(existingChat, [...existingChat.messages, message]);
       nextChat.unreadCount =
-        isIncoming && state.selectedChatId !== chatId
+        isIncoming && state.selectedChatId !== chatId && !alreadyExists
           ? existingChat.unreadCount + 1
           : existingChat.unreadCount;
 

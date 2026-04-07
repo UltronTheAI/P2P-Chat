@@ -7,6 +7,7 @@ import {
   deleteChat,
   deleteMessage,
   getChat,
+  getMessage,
   getMessagesByChat,
   getUser,
   markChatRead,
@@ -175,6 +176,33 @@ export function useMessages(peerId: string, enabled: boolean) {
         replyTo: payload.replyTo,
         deletedAt: payload.deletedAt,
       };
+
+      const existingMessage = await getMessage(incomingMessage.id);
+      if (existingMessage) {
+        addMessage(chat.chatId, {
+          ...existingMessage,
+          ...incomingMessage,
+          status:
+            existingMessage.status === "read"
+              ? "read"
+              : existingMessage.status === "delivered"
+                ? "delivered"
+                : incomingMessage.status,
+        });
+        emitDelivered({
+          ...existingMessage,
+          ...incomingMessage,
+          status: existingMessage.status,
+        });
+
+        if (selectedChatId === chat.chatId && existingMessage.status !== "read") {
+          await updateMessageStatus(incomingMessage.id, "read");
+          setMessageStatus(chat.chatId, incomingMessage.id, "read");
+          emitRead({ ...incomingMessage, status: "read" });
+        }
+
+        return;
+      }
 
       await saveMessage(incomingMessage);
       await saveChat({
