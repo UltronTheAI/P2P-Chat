@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">p2p_chat</string>
+    <string name="title_activity_main">p2p_chat</string>
+    <string name="package_name">com.liorangroup.p2pchat</string>
+    <string name="custom_url_scheme">com.liorangroup.p2pchat</string>
+</resources>
