@@ -12,6 +12,8 @@ type RelayPayload = {
   [key: string]: unknown;
 };
 
+type PendingMessage = RelayPayload & { from: string; timestamp: number };
+
 const httpServer = createServer();
 
 const io = new Server(httpServer, {
@@ -22,6 +24,7 @@ const io = new Server(httpServer, {
 
 const activePeers = new Map<string, PeerPresence>();
 const socketToPeerId = new Map<string, string>();
+const pendingMessages = new Map<string, PendingMessage[]>();
 
 function emitActivePeers() {
   io.emit(
@@ -33,6 +36,24 @@ function emitActivePeers() {
       lastActiveAt: presence.lastActiveAt,
     })),
   );
+}
+
+function deliverPendingMessages(peerId: string) {
+  const messages = pendingMessages.get(peerId);
+  if (!messages || messages.length === 0) {
+    return;
+  }
+
+  const presence = activePeers.get(peerId);
+  if (!presence) {
+    return;
+  }
+
+  // Send pending messages to the peer
+  io.to(presence.socketId).emit("pending-messages", messages);
+
+  // Clear pending messages after delivery
+  pendingMessages.delete(peerId);
 }
 
 function updatePresence(peerId: string, overrides?: Partial<PeerPresence>) {
@@ -56,10 +77,11 @@ function relayToPeer(eventName: string, payload: RelayPayload) {
   const target = activePeers.get(payload.to);
 
   if (!target) {
-    return;
+    return false;
   }
 
   io.to(target.socketId).emit(eventName, payload);
+  return true;
 }
 
 io.on("connection", (socket) => {
@@ -82,6 +104,7 @@ io.on("connection", (socket) => {
       lastActiveAt,
     });
     emitActivePeers();
+    deliverPendingMessages(payload.peerId);
   });
 
   socket.on("profile-update", (payload: { peerId: string; name: string | null }) => {
@@ -130,7 +153,13 @@ io.on("connection", (socket) => {
       }
     }
 
-    relayToPeer("message", payload);
+    const relayed = relayToPeer("message", payload);
+    if (!relayed && typeof payload.to === "string") {
+      // Store pending message
+      const existing = pendingMessages.get(payload.to) || [];
+      existing.push({ ...payload, from: payload.from as string, timestamp: Date.now() });
+      pendingMessages.set(payload.to, existing);
+    }
   });
 
   socket.on("message-deleted", (payload: RelayPayload) => {

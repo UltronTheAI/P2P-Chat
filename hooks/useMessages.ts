@@ -23,6 +23,7 @@ import type {
   Message,
   MessageDeletePayload,
   MessageStatusPayload,
+  PendingMessagesPayload,
   SocketMessagePayload,
   TypingPayload,
 } from "@/lib/types";
@@ -260,6 +261,12 @@ export function useMessages(peerId: string, enabled: boolean) {
       }
     };
 
+    const onPendingMessages = (payload: PendingMessagesPayload) => {
+      payload.forEach((message) => {
+        void handleIncomingMessage(message);
+      });
+    };
+
     socket.on("signal", onSignal);
     socket.on("message", onSocketMessage);
     socket.on("typing", onTyping);
@@ -267,6 +274,7 @@ export function useMessages(peerId: string, enabled: boolean) {
     socket.on("message-read", onRead);
     socket.on("message-deleted", onDeleted);
     socket.on("connection-response", onConnectionResponse);
+    socket.on("pending-messages", onPendingMessages);
 
     return () => {
       offMessage();
@@ -280,6 +288,7 @@ export function useMessages(peerId: string, enabled: boolean) {
       socket.off("message-read", onRead);
       socket.off("message-deleted", onDeleted);
       socket.off("connection-response", onConnectionResponse);
+      socket.off("pending-messages", onPendingMessages);
       transport.destroy();
     };
   }, [

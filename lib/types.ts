@@ -98,6 +98,8 @@ export type MessageDeletePayload = {
   deletedAt: number;
 };
 
+export type PendingMessagesPayload = SocketMessagePayload[];
+
 export type ConnectionRequest = {
   id: string;
   fromPeerId: string;
