@@ -9,6 +9,7 @@
     "server": "nodemon server/signalingServer.ts",
     "dev:start": "concurrently \"npm run dev\" \"npm run server\"",
     "start": "next start",
+    "server:production": "ts-node server/signalingServer.ts",
     "lint": "eslint"
   },
   "dependencies": {
@@ -50,6 +51,7 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
